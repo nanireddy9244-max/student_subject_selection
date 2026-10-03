@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Subject Selection</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #222;
+            color: white;
+            margin: 5px;
+        }
+
+        .subject {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #e9f7ef;
+            border-radius: 10px;
+        }
+
+        .remove {
+            background: #d9534f;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎓 Student Subject Selection</h1>
+
+    <label>
+        Maximum Credits:
+        <input type="number" id="maxCredits" value="7">
+    </label>
+
+    <hr>
+
+    <h3>Add Subject</h3>
+
+    <input type="text" id="name" placeholder="Subject name">
+    <input type="number" id="credits" placeholder="Credits">
+    <input type="number" id="score" placeholder="Preference score">
+
+    <button onclick="addSubject()">Add Subject</button>
+
+    <h3>Available Subjects</h3>
+
+    <div id="subjects"></div>
+
+    <button onclick="findBest()">Find Best Subjects</button>
+
+    <div id="result"></div>
+
+</div>
+
+
+<script>
+
+let subjects = [];
+
+
+function addSubject() {
+
+    let name = document.getElementById("name").value;
+    let credits = Number(document.getElementById("credits").value);
+    let score = Number(document.getElementById("score").value);
+
+    if (!name || credits <= 0 || score <= 0) {
+        alert("Enter valid subject details");
+        return;
+    }
+
+    subjects.push({
+        name: name,
+        credits: credits,
+        score: score
+    });
+
+    displaySubjects();
+
+    document.getElementById("name").value = "";
+    document.getElementById("credits").value = "";
+    document.getElementById("score").value = "";
+}
+
+
+function displaySubjects() {
+
+    let container = document.getElementById("subjects");
+
+    container.innerHTML = "";
+
+    subjects.forEach((subject, index) => {
+
+        container.innerHTML += `
+            <div class="subject">
+                <b>${subject.name}</b>
+                - ${subject.credits} Credits
+                - Score: ${subject.score}
+
+                <button class="remove"
+                    onclick="removeSubject(${index})">
+                    Remove
+                </button>
+            </div>
+        `;
+    });
+}
+
+
+function removeSubject(index) {
+
+    subjects.splice(index, 1);
+
+    displaySubjects();
+}
+
+
+async function findBest() {
+
+    let maxCredits =
+        Number(document.getElementById("maxCredits").value);
+
+    if (subjects.length === 0) {
+        alert("Add some subjects first");
+        return;
+    }
+
+    let response = await fetch("/select", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            subjects: subjects,
+            max_credits: maxCredits
+        })
+    });
+
+    let result = await response.json();
+
+    let html = `
+        <div class="result">
+
+            <h2>🎯 Recommended Subjects</h2>
+    `;
+
+    result.selected.forEach(subject => {
+
+        html += `
+            <p>
+                ✅ <b>${subject.name}</b>
+                — ${subject.credits} Credits
+                — Score: ${subject.score}
+            </p>
+        `;
+    });
+
+    html += `
+            <hr>
+
+            <p>
+                <b>Total Credits:</b>
+                ${result.total_credits}
+            </p>
+
+            <p>
+                <b>Total Preference Score:</b>
+                ${result.score}
+            </p>
+
+            <p>
+                <b>Algorithm:</b>
+                0/1 Knapsack + Dynamic Programming
+            </p>
+
+        </div>
+    `;
+
+    document.getElementById("result").innerHTML = html;
+}
+
+</script>
+
+</body>
+</html>
